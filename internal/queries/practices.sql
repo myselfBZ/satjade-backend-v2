@@ -28,6 +28,8 @@ SELECT * FROM practices;
 SELECT
     p.id,
     p.title,
+    p.created_at,
+    p.updated_at,
     m.id AS module_id,
     m.name AS module_name,
     m.order_index

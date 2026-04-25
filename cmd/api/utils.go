@@ -5,9 +5,14 @@ import (
 	"os"
 	"strings"
 	"text/tabwriter"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
+
+func slowDown(secs int) {
+	time.Sleep(time.Duration(secs) * time.Second)
+}
 
 
 func PrintRoutes(e *echo.Echo) {

@@ -69,8 +69,6 @@ func (s *userStore) Delete(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-
-
 func (s *userStore) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	user, err := s.queries.GetUserById(ctx, pgtype.UUID{Bytes: id, Valid: true})
 
@@ -107,6 +105,7 @@ func (s *userStore) GetByEmail(ctx context.Context, email string) (*domain.User,
 	}
 	return &domain.User{
 		ID:        user.ID.Bytes,
+		FullName:  user.FullName,
 		Email:     user.Email,
 		Password:  user.PasswordHash,
 		Role:      user.Role,

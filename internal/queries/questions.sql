@@ -27,17 +27,28 @@ WHERE id = $2;
 
 
 -- name: GetQuestionDistribution :many
+WITH latest_attempts AS (
+    SELECT DISTINCT ON (question_id)
+        question_id,
+        is_correct
+    FROM question_attempts
+    WHERE user_id = $1
+    ORDER BY question_id, created_at DESC  -- adjust column name if needed
+)
 SELECT 
     q.domain, 
     q.skill,
     q.difficulty,
-    COUNT(q.id)                                          AS total_count,
-    COUNT(qa.question_id) FILTER (WHERE qa.is_correct = true)  AS correct_count,
-    COUNT(qa.question_id) FILTER (WHERE qa.is_correct = false) AS incorrect_count,
-    COUNT(q.id) FILTER (WHERE qa.question_id IS NULL)          AS unattempted_count
+    COUNT(q.id)                                                              AS total_count,
+    COUNT(la.question_id) FILTER (WHERE la.is_correct = true)               AS correct_count,
+    COUNT(la.question_id) FILTER (WHERE la.is_correct = false)              AS incorrect_count,
+    COUNT(q.id) FILTER (WHERE la.question_id IS NULL)                       AS unattempted_count
 FROM questions q
-LEFT JOIN question_attempts qa ON qa.question_id = q.id AND qa.user_id = $1
+LEFT JOIN latest_attempts la ON la.question_id = q.id
+WHERE q.skill <> 'imported' 
 GROUP BY q.domain, q.skill, q.difficulty;
+
+
 
 -- name: GetQuestionsByModule :many
 SELECT

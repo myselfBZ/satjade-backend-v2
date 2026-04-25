@@ -28,6 +28,8 @@ func (s *practiceStore) GetWithModules(ctx context.Context, id uuid.UUID) (*doma
 	practice := &domain.Practice{
 		ID: rows[0].ID.String(),
 		Title: rows[0].Title,
+		CreatedAt: &rows[0].CreatedAt.Time,
+		UpdatedAt: &rows[0].UpdatedAt.Time,
 	}
 
 	for i := range rows {

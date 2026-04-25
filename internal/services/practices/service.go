@@ -34,6 +34,7 @@ func New(params *ServiceParams) PracticeService {
 }
 
 type PracticeService interface {
+	GetPublishedPreviews(ctx context.Context) ([]domain.PublishedPracticePreview, error)
 	Create(ctx context.Context, title string) (*domain.Practice, error)
 	GetPreviews(ctx context.Context) ([]domain.Practice, error)
 	GetFullTest(ctx context.Context, id uuid.UUID) (*domain.Practice, error)
@@ -46,12 +47,19 @@ type PublishParams struct {
 	PracticeId  uuid.UUID
 }
 
+func (s *service) GetPublishedPreviews(ctx context.Context) ([]domain.PublishedPracticePreview, error)  {
+	return s.publishedPracticeStore.GetPreviews(ctx)
+}
+
 func (s *service) Publish(ctx context.Context, params *PublishParams) error {
 	practice, err := s.GetFullTest(ctx, params.PracticeId)
 
 	if err != nil {
 		return err
 	}
+
+	practice.CreatedAt = nil
+	practice.UpdatedAt = nil
 
 	data, err := json.Marshal(practice)
 

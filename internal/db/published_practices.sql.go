@@ -28,6 +28,41 @@ func (q *Queries) GetPublishedPractice(ctx context.Context, id pgtype.UUID) (Pub
 	return i, err
 }
 
+const getPublishedPracticesPreviews = `-- name: GetPublishedPracticesPreviews :many
+SELECT p.title, pp.published_at, pp.id 
+FROM 
+published_practices pp 
+JOIN 
+practices p 
+ON p.id = pp.practice_id
+`
+
+type GetPublishedPracticesPreviewsRow struct {
+	Title       string
+	PublishedAt pgtype.Timestamptz
+	ID          pgtype.UUID
+}
+
+func (q *Queries) GetPublishedPracticesPreviews(ctx context.Context) ([]GetPublishedPracticesPreviewsRow, error) {
+	rows, err := q.db.Query(ctx, getPublishedPracticesPreviews)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPublishedPracticesPreviewsRow
+	for rows.Next() {
+		var i GetPublishedPracticesPreviewsRow
+		if err := rows.Scan(&i.Title, &i.PublishedAt, &i.ID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const publishPractice = `-- name: PublishPractice :one
 INSERT INTO published_practices(practice_id, published_by, data) VALUES(
     $1, $2, $3

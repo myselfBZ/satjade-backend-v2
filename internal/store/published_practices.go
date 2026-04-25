@@ -21,6 +21,26 @@ type PublishParams struct {
 	Data        []byte
 }
 
+func (s *publishedPracticeStore) GetPreviews(ctx context.Context) ([]domain.PublishedPracticePreview, error) {
+	rows, err := s.queries.GetPublishedPracticesPreviews(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	previews := make([]domain.PublishedPracticePreview, len(rows))
+
+	for i := range rows {
+		previews[i] = domain.PublishedPracticePreview{
+			ID:          rows[i].ID.Bytes,
+			Title:       rows[i].Title,
+			PublishedAt: rows[i].PublishedAt.Time,
+		}
+	}
+
+	return previews, nil
+}
+
 func (s *publishedPracticeStore) GetById(ctx context.Context, id uuid.UUID) (*domain.PublishedPractice, error) {
 	row, err := s.queries.GetPublishedPractice(ctx, pgtype.UUID{Bytes: id, Valid: true})
 

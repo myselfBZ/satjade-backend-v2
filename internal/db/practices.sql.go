@@ -85,6 +85,8 @@ const getPracticeWithModules = `-- name: GetPracticeWithModules :many
 SELECT
     p.id,
     p.title,
+    p.created_at,
+    p.updated_at,
     m.id AS module_id,
     m.name AS module_name,
     m.order_index
@@ -97,6 +99,8 @@ ORDER BY m.order_index
 type GetPracticeWithModulesRow struct {
 	ID         pgtype.UUID
 	Title      string
+	CreatedAt  pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
 	ModuleID   pgtype.UUID
 	ModuleName string
 	OrderIndex int16
@@ -114,6 +118,8 @@ func (q *Queries) GetPracticeWithModules(ctx context.Context, id pgtype.UUID) ([
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
+			&i.CreatedAt,
+			&i.UpdatedAt,
 			&i.ModuleID,
 			&i.ModuleName,
 			&i.OrderIndex,

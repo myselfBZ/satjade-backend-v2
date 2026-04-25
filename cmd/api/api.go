@@ -13,6 +13,7 @@ import (
 	"github.com/myselfBZ/satjade-backend/internal/auth"
 	"github.com/myselfBZ/satjade-backend/internal/filestore"
 	auth_service "github.com/myselfBZ/satjade-backend/internal/services/auth"
+	practiceattempt_service "github.com/myselfBZ/satjade-backend/internal/services/practice-attempt"
 	practices_service "github.com/myselfBZ/satjade-backend/internal/services/practices"
 	questions_service "github.com/myselfBZ/satjade-backend/internal/services/questions"
 	users_service "github.com/myselfBZ/satjade-backend/internal/services/users"
@@ -20,10 +21,11 @@ import (
 )
 
 type services struct {
-	Auth      auth_service.AuthService
-	Users     users_service.UserService
-	Practices practices_service.PracticeService
-	Questions questions_service.QuestionsService
+	Auth            auth_service.AuthService
+	Users           users_service.UserService
+	Practices       practices_service.PracticeService
+	Questions       questions_service.QuestionsService
+	PracticeAttempt practiceattempt_service.PracticeAttemptService
 }
 
 type authConfig struct {
@@ -42,10 +44,6 @@ type config struct {
 	refreshSecretKey string
 	imgStorePath     string
 	llmApiKey        string
-}
-
-type ErrEnvelope struct {
-	Error string `json:"error"`
 }
 
 func (c *config) Load() {
@@ -155,6 +153,12 @@ func (a *api) mount() *echo.Echo {
 	practicesR := v1.Group("/practices", a.AuthMiddleware)
 	practicesR.GET("/previews", a.getPracticePreviewsHandler)
 	practicesR.GET("/published/:publishedId", a.getPublishedPracticeHandler)
+	practicesR.GET("/published", a.getPublishedPracticesPreviewsHandler)
+
+	attemptsR := v1.Group("/attempts", a.AuthMiddleware)
+	attemptsR.POST("/", a.createPracticeAttemptHandler)
+	attemptsR.GET("/", a.getPracticeAttemptPreviewsHandler)
+	attemptsR.GET("/:attemptId", a.getPracticeAttemptByIdHandler)
 
 	questions := v1.Group("/questions", a.AuthMiddleware)
 

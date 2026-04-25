@@ -9,6 +9,7 @@ import (
 	"github.com/myselfBZ/satjade-backend/internal/filestore"
 	"github.com/myselfBZ/satjade-backend/internal/postgres"
 	auth_service "github.com/myselfBZ/satjade-backend/internal/services/auth"
+	practiceattempt_service "github.com/myselfBZ/satjade-backend/internal/services/practice-attempt"
 	practices_service "github.com/myselfBZ/satjade-backend/internal/services/practices"
 	questions_service "github.com/myselfBZ/satjade-backend/internal/services/questions"
 	users_service "github.com/myselfBZ/satjade-backend/internal/services/users"
@@ -72,12 +73,17 @@ func main() {
 		QuestionAttemptsStore: storage.QuestionAttempts,
 		FileStore:             a.filestorage,
 	})
+	practiceattemptservice := practiceattempt_service.New(&practiceattempt_service.ServiceParams{
+		PracticeAttemptStore:   storage.PracticeAttempts,
+		PublishedPracticeStore: storage.PublishedPractices,
+	})
 
 	services := services{
-		Auth:      authservice,
-		Users:     userservice,
-		Practices: practicesservice,
-		Questions: questionsservice,
+		Auth:            authservice,
+		Users:           userservice,
+		Practices:       practicesservice,
+		Questions:       questionsservice,
+		PracticeAttempt: practiceattemptservice,
 	}
 
 	a.services = services

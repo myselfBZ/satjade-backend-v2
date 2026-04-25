@@ -10,7 +10,6 @@ import (
 	"github.com/myselfBZ/satjade-backend/internal/domain"
 )
 
-
 func New(pool *pgxpool.Pool) *Storage {
 	queries := db.New(pool)
 
@@ -20,6 +19,7 @@ func New(pool *pgxpool.Pool) *Storage {
 		Questions:          &questionStore{queries: *queries, pool: pool},
 		PublishedPractices: &publishedPracticeStore{queries: queries},
 		QuestionAttempts:   &questionAttemptsStore{queries: queries},
+		PracticeAttempts: &practiceAttemptsStore{queries: queries, pool: pool},
 	}
 }
 
@@ -29,6 +29,13 @@ type Storage struct {
 	Questions          QuestionStore
 	QuestionAttempts   QuestionAttemptsStore
 	PublishedPractices PublishedPracticesStore
+	PracticeAttempts   PracticeAttemptStore
+}
+
+type PracticeAttemptStore interface {
+	Create(ctx context.Context, p *domain.PracticeAttempt) error
+	GetPreviewsByUser(ctx context.Context, userId uuid.UUID) ([]domain.PracticeAttemptPreview, error)
+	GetById(ctx context.Context, id uuid.UUID) (*domain.PracticeAttempt, error)
 }
 
 type QuestionStore interface {
@@ -49,6 +56,7 @@ type QuestionAttemptsStore interface {
 type PublishedPracticesStore interface {
 	Publish(ctx context.Context, params *PublishParams) error
 	GetById(ctx context.Context, id uuid.UUID) (*domain.PublishedPractice, error)
+	GetPreviews(ctx context.Context) ([]domain.PublishedPracticePreview, error)
 }
 
 type PracticeStore interface {
@@ -68,6 +76,13 @@ type UserStore interface {
 func deref(s *string) string {
 	if s == nil {
 		return ""
+	}
+	return *s
+}
+
+func derefUUID(s *uuid.UUID) uuid.UUID {
+	if s == nil {
+		return uuid.UUID{}
 	}
 	return *s
 }

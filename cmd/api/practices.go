@@ -37,7 +37,7 @@ func (a *api) createPracticeHandler(c echo.Context) error {
 	var payload practices_service.CreatePracticeParams
 	if err := c.Bind(&payload); err != nil {
 		a.badRequestLog(c.Request().Method, c.Path(), err)
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, "malformed request payload")
+		return echo.NewHTTPError(http.StatusBadRequest, "malformed request payload")
 	}
 	if err := a.validator.Struct(&payload); err != nil {
 		a.badRequestLog(c.Request().Method, c.Path(), err)
@@ -73,6 +73,17 @@ func (a *api) getPublishedPracticeHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, practice)
+}
+
+func (a *api) getPublishedPracticesPreviewsHandler(c echo.Context) error {
+	practices, err := a.services.Practices.GetPublishedPreviews(c.Request().Context())
+
+	if err != nil {
+		a.internalErrLog(c.Request().Method, c.Path(), err)
+		return echo.NewHTTPError(http.StatusInternalServerError)
+	}
+
+	return c.JSON(http.StatusOK, practices)
 }
 
 
