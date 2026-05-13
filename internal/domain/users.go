@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-
 const (
 	ROLE_STUDENT = "student"
 	ROLE_ADMIN   = "admin"
@@ -20,4 +19,10 @@ type User struct {
 	Role      string    `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type SearchUserResult struct {
+	Id 		 uuid.UUID `json:"id"`
+	JoinedOn time.Time `json:"joined_on"`
+	FullName string    `json:"full_name"`
 }

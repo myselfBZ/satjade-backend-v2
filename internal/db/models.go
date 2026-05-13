@@ -112,6 +112,21 @@ type AttemptResponse struct {
 	IsCorrect        pgtype.Bool
 }
 
+type Friend struct {
+	ID        pgtype.UUID
+	User1     pgtype.UUID
+	User2     pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+}
+
+type FriendshipRequest struct {
+	ID        pgtype.UUID
+	ToID      pgtype.UUID
+	FromID    pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+	Message   pgtype.Text
+}
+
 type Module struct {
 	ID         pgtype.UUID
 	PracticeID pgtype.UUID

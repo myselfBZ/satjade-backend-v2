@@ -30,11 +30,16 @@ type CreateAttemptParams struct {
 	domain.QuestionAttempt
 }
 
+type CheckParams struct {
+	Response   string
+	QuestionId uuid.UUID
+}
+
 type CreateToModuleParams struct {
 	Question *CreateQuestParams `json:"question"`
 	Number   int                `json:"number"`
 	// set by the handler manually
-	ModuleId uuid.UUID			`json:"-"`
+	ModuleId uuid.UUID `json:"-"`
 }
 
 type LinkToModuleParams struct {
@@ -68,6 +73,8 @@ type QuestionsService interface {
 	FilterIDs(ctx context.Context, params *FilterParams) (uuid.UUIDs, error)
 	GetAttemptsByUser(ctx context.Context, userID uuid.UUID) ([]domain.QuestionAttempt, error)
 	CreateAttempt(ctx context.Context, params *CreateAttemptParams) (*domain.QuestionAttempt, error)
+	GetRandomIds(ctx context.Context) (uuid.UUIDs, error)
+	Check(ctx context.Context, params CheckParams) (bool ,error)
 }
 
 type service struct {
@@ -86,8 +93,8 @@ func (s *service) CreateToModule(ctx context.Context, params *CreateToModulePara
 
 	return s.LinkToModule(ctx, &LinkToModuleParams{
 		LinkToModuleParams: store.LinkToModuleParams{
-			Number: params.Number,
-			ModuleId: params.ModuleId,
+			Number:     params.Number,
+			ModuleId:   params.ModuleId,
 			QuestionId: q.ID,
 		},
 	})
@@ -203,3 +210,38 @@ func (s *service) CreateAttempt(ctx context.Context, params *CreateAttemptParams
 
 	return s.questionAttemptsStore.Create(ctx, &params.QuestionAttempt)
 }
+
+func (s *service) GetRandomIds(ctx context.Context) (uuid.UUIDs, error) {
+	return s.questionStore.GetRandomIds(ctx)
+}
+
+func (s *service) Check(ctx context.Context, params CheckParams) (bool ,error) {
+	isCorrect := false
+	question, err := s.questionStore.GetById(ctx, params.QuestionId)
+
+	if err != nil {
+		return false, err
+	}
+
+	if question.Type == "multiple_choice" {
+		upper := strings.ToUpper(params.Response)
+		isCorrect = upper == store.MustGetCorrectChoice(question.Choices).Label
+	}
+
+	if question.Type == "open_response" {
+		correct, err := answereval.EvaluateAnswer(params.Response, question.OpenAnswerKey.ModelAnswer)
+
+		if err != nil || !correct {
+			isCorrect = false
+		} else {
+			isCorrect = true
+		}
+
+	}
+
+	return isCorrect, nil
+}
+
+
+
+

@@ -344,6 +344,35 @@ func (q *Queries) GetQuestionsByModule(ctx context.Context, moduleID pgtype.UUID
 	return items, nil
 }
 
+const getRandomQuestions = `-- name: GetRandomQuestions :many
+SELECT id FROM questions WHERE skill <> 'imported' AND domain IN (
+    'Algebra',
+    'Problem-Solving and Data Analysis',
+    'Advanced Math',
+    'Geometry'
+) ORDER BY RANDOM() LIMIT 10
+`
+
+func (q *Queries) GetRandomQuestions(ctx context.Context) ([]pgtype.UUID, error) {
+	rows, err := q.db.Query(ctx, getRandomQuestions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []pgtype.UUID
+	for rows.Next() {
+		var id pgtype.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const linkQuestionToModule = `-- name: LinkQuestionToModule :exec
 INSERT INTO module_questions (
     module_id,

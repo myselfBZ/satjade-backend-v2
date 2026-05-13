@@ -2,7 +2,6 @@ package practiceattempt_service
 
 import (
 	"context"
-	"log"
 	"math"
 	"time"
 
@@ -153,8 +152,6 @@ func (s *service) grade(modules []domain.Module, responses map[string]string) (g
 					}
 
 					r.IsCorrect = *r.SelectedChoiceId == *q.CorrectChoiceID
-					log.Println("CorrectChoiceID:", q.CorrectChoiceID)
-					log.Println("SelectedChoiceId:", r.SelectedChoiceId)
 					domainResponses = append(domainResponses, r)
 				case "open_response":
 					r.UserAnswer = &resp

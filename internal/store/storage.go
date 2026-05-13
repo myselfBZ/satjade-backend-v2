@@ -19,7 +19,8 @@ func New(pool *pgxpool.Pool) *Storage {
 		Questions:          &questionStore{queries: *queries, pool: pool},
 		PublishedPractices: &publishedPracticeStore{queries: queries},
 		QuestionAttempts:   &questionAttemptsStore{queries: queries},
-		PracticeAttempts: &practiceAttemptsStore{queries: queries, pool: pool},
+		PracticeAttempts:   &practiceAttemptsStore{queries: queries, pool: pool},
+		Friends:            &friendsStore{queries: queries, pool: pool},
 	}
 }
 
@@ -30,6 +31,7 @@ type Storage struct {
 	QuestionAttempts   QuestionAttemptsStore
 	PublishedPractices PublishedPracticesStore
 	PracticeAttempts   PracticeAttemptStore
+	Friends            FriendsStore
 }
 
 type PracticeAttemptStore interface {
@@ -40,6 +42,7 @@ type PracticeAttemptStore interface {
 
 type QuestionStore interface {
 	Create(ctx context.Context, q *domain.Question) error
+	GetRandomIds(ctx context.Context) (uuid.UUIDs, error) 
 	GetById(ctx context.Context, id uuid.UUID) (*domain.Question, error)
 	GetDistributionByDomain(ctx context.Context, userId uuid.UUID) ([]domain.DomainDistribution, error)
 	CreateToModule(ctx context.Context, params *CreateToModuleParam) error
@@ -71,6 +74,16 @@ type UserStore interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	GetMany(ctx context.Context) ([]domain.User, error)
 	Delete(ctx context.Context, id uuid.UUID) error
+}
+
+type FriendsStore interface {
+	GetManyByUser(ctx context.Context, userId uuid.UUID) ([]domain.Friend, error)
+	Create(ctx context.Context, params *CreateFriendParams) (domain.Friend, error)
+	Delete(ctx context.Context, friendshipId uuid.UUID) error
+	CreateFriendRequest(ctx context.Context, params *CreateFriendRequestParams) (domain.FriendshipRequest ,error)
+	DeleteFriendshipRequest(ctx context.Context, id uuid.UUID) error
+	AcceptFrienshipRequest(ctx context.Context, requestId uuid.UUID) (domain.Friendship, error)
+	GetFriendshipRequests(ctx context.Context, userId uuid.UUID) ([]domain.FriendshipRequest, error)
 }
 
 func deref(s *string) string {

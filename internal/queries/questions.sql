@@ -146,3 +146,13 @@ LEFT JOIN answer_choices ac  ON ac.question_id = q.id
 LEFT JOIN open_answer_keys oak ON oak.question_id = q.id
 WHERE q.id = $1
 GROUP BY q.id, oak.id;
+
+
+
+-- name: GetRandomQuestions :many
+SELECT id FROM questions WHERE skill <> 'imported' AND domain IN (
+    'Algebra',
+    'Problem-Solving and Data Analysis',
+    'Advanced Math',
+    'Geometry'
+) ORDER BY RANDOM() LIMIT 10;

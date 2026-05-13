@@ -31,6 +31,7 @@ func (a *api) createPracticeAttemptHandler(c echo.Context) error {
 
 	if err := a.services.PracticeAttempt.Create(c.Request().Context(), &payload); err != nil {
 		a.badRequestLog(c.Request().Method, c.Path(), err)
+		// TODO proper error handling
 		return echo.NewHTTPError(http.StatusBadRequest, "unexpected error")
 	}
 

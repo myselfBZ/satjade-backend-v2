@@ -9,6 +9,7 @@ import (
 	"github.com/myselfBZ/satjade-backend/internal/filestore"
 	"github.com/myselfBZ/satjade-backend/internal/postgres"
 	auth_service "github.com/myselfBZ/satjade-backend/internal/services/auth"
+	friends_service "github.com/myselfBZ/satjade-backend/internal/services/friends"
 	practiceattempt_service "github.com/myselfBZ/satjade-backend/internal/services/practice-attempt"
 	practices_service "github.com/myselfBZ/satjade-backend/internal/services/practices"
 	questions_service "github.com/myselfBZ/satjade-backend/internal/services/questions"
@@ -22,8 +23,17 @@ func main() {
 	cfg.Load()
 
 	a := &api{
+		wsClients: newWsClientsMap(),
+		challenges: newChallengeMap(),
+		duels: newDuelMap(),
 		config: cfg,
+		// TODO, make it configurable
+		wsConnCloseCh: make(chan string, 100),
+		eventCh: make(chan eventWrapper, 100),
 	}
+
+
+
 	logger := zap.Must(zap.NewProduction(zap.AddCaller())).Sugar()
 	defer logger.Sync()
 	a.logger = logger
@@ -77,6 +87,7 @@ func main() {
 		PracticeAttemptStore:   storage.PracticeAttempts,
 		PublishedPracticeStore: storage.PublishedPractices,
 	})
+	friendsservice := friends_service.New(storage.Friends)
 
 	services := services{
 		Auth:            authservice,
@@ -84,6 +95,7 @@ func main() {
 		Practices:       practicesservice,
 		Questions:       questionsservice,
 		PracticeAttempt: practiceattemptservice,
+		Friends: friendsservice,
 	}
 
 	a.services = services

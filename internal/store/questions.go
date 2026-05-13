@@ -387,6 +387,22 @@ func (s *questionStore) FilterIDs(ctx context.Context, params *FilterParams) (uu
 	return ids, nil
 }
 
+func (s *questionStore) GetRandomIds(ctx context.Context) (uuid.UUIDs, error) {
+	rows, err := s.queries.GetRandomQuestions(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	result := uuid.UUIDs{}
+
+	for _, r := range rows {
+		result = append(result, r.Bytes)
+	}
+
+	return result, nil
+}
+
 func markCorrectChoice(correctID uuid.UUID, choices []domain.AnswerChoice) {
 	for i := range choices {
 		if choices[i].ID == correctID {
@@ -395,3 +411,4 @@ func markCorrectChoice(correctID uuid.UUID, choices []domain.AnswerChoice) {
 		}
 	}
 }
+

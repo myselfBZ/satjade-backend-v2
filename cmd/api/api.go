@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -13,6 +14,7 @@ import (
 	"github.com/myselfBZ/satjade-backend/internal/auth"
 	"github.com/myselfBZ/satjade-backend/internal/filestore"
 	auth_service "github.com/myselfBZ/satjade-backend/internal/services/auth"
+	friends_service "github.com/myselfBZ/satjade-backend/internal/services/friends"
 	practiceattempt_service "github.com/myselfBZ/satjade-backend/internal/services/practice-attempt"
 	practices_service "github.com/myselfBZ/satjade-backend/internal/services/practices"
 	questions_service "github.com/myselfBZ/satjade-backend/internal/services/questions"
@@ -26,6 +28,7 @@ type services struct {
 	Practices       practices_service.PracticeService
 	Questions       questions_service.QuestionsService
 	PracticeAttempt practiceattempt_service.PracticeAttemptService
+	Friends         friends_service.FriendsService
 }
 
 type authConfig struct {
@@ -102,6 +105,38 @@ func (c *config) Load() {
 	}
 }
 
+func newWsClientsMap() *wsClientsMap {
+	return &wsClientsMap{
+		clients: make(map[string]*wsClient),
+		mx:      sync.Mutex{},
+	}
+}
+
+type wsClientsMap struct {
+	clients map[string]*wsClient
+	mx      sync.Mutex
+}
+
+func (w *wsClientsMap) Get(id string) (*wsClient, bool) {
+	w.mx.Lock()
+	defer w.mx.Unlock()
+	c, ok := w.clients[id]
+	return c, ok
+}
+
+func (w *wsClientsMap) Set(id string, c *wsClient) {
+	w.mx.Lock()
+	defer w.mx.Unlock()
+
+	w.clients[id] = c
+}
+
+func (w *wsClientsMap) Del(id string) {
+	w.mx.Lock()
+	defer w.mx.Unlock()
+	delete(w.clients, id)
+}
+
 type api struct {
 	config      *config
 	logger      *zap.SugaredLogger
@@ -109,6 +144,12 @@ type api struct {
 	validator   *validator.Validate
 	auth        auth.Authenticator
 	filestorage filestore.FileStorage
+
+	wsClients     *wsClientsMap
+	wsConnCloseCh chan string
+	challenges    *challengeMap
+	eventCh       chan eventWrapper
+	duels         *duelMap
 }
 
 func (a *api) mount() *echo.Echo {
@@ -137,7 +178,11 @@ func (a *api) mount() *echo.Echo {
 	usersR := v1.Group("/users", a.AuthMiddleware)
 
 	usersR.GET("/self", a.getSelfHandler)
+	usersR.GET("/me/friends", a.getFriendsHandler)
+	usersR.POST("/:user_id/friends", a.sendFriendshipRequestHandler)
+
 	usersR.GET("/:userId/questionattempts", a.getQuestionAttemptsByUserHandler)
+	usersR.GET("/search", a.searchUserHandler)
 
 	internalR := v1.Group("/internal", a.AuthMiddleware, a.CheckAdminMiddleware)
 	internalR.GET("/users", a.getUsersHandler)
@@ -169,12 +214,22 @@ func (a *api) mount() *echo.Echo {
 	questions.GET("/ids", a.filterQuestionIdsHandler)
 	questions.GET("/distribution", a.getQuestionDistributionHandler)
 
+	friendshipR := v1.Group("/friendship", a.AuthMiddleware)
+	friendshipR.GET("/requests", a.getFriendshipRequestsHandler)
+	friendshipR.DELETE("/requests/:request_id", a.rejectFriendshipRequestHandler)
+	friendshipR.POST("/requests/:request_id", a.acceptFriendshipRequestHandler)
+	friendshipR.DELETE("/:id", a.deleteFriendHandler)
+
+	v1.GET("/ws/duel", a.handleWSConn)
+
 	v1.Static("/media", a.config.imgStorePath)
 	return e
 }
 
 func (a *api) run() error {
 	e := a.mount()
+	go a.handleEventLoop()
+	go a.onDissconnect()
 	return e.Start(a.config.addr)
 }
 

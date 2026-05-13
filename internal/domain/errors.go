@@ -13,5 +13,8 @@ var (
 	ErrForeignConstraint     = errors.New("foreign key constraint violated")
 	ErrConflict              = errors.New("conflict request")
 
-	ErrInvalidChoice		= errors.New("invalid choice id. Choice not found.")
+	ErrInvalidChoice = errors.New("invalid choice id. Choice not found.")
+
+	ErrFriendsAlreadyExist = errors.New("this friendship already exists")
+	ErrSelfCantBeFriend    = errors.New("you can't be friends with yourself")
 )
