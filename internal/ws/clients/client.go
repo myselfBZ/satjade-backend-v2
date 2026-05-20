@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 
@@ -82,7 +81,6 @@ func (c *Client) writeLoop() {
 		if shouldClose {
 			c.conn.Close(websocket.StatusNormalClosure, "bye")
 			c.exitCh <- c.User.ID.String()
-			log.Println("BYE BYE wrteLoop() is done")
 		}
 	}()
 
