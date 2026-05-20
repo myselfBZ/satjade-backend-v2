@@ -17,6 +17,6 @@ func (a *api) unauthorizedLog(method string, path string, err error) {
 }
 
 func (a *api) conflictLog(method string, path string, err error) {
-	a.logger.Errorf("conflicted request", "method", method, "path", path, "error", err.Error())
+	a.logger.Errorw("conflicted request", "method", method, "path", path, "error", err.Error())
 }
 
