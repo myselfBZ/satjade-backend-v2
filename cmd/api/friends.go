@@ -7,6 +7,7 @@ import (
 	"github.com/myselfBZ/satjade-backend/internal/domain"
 	friends_service "github.com/myselfBZ/satjade-backend/internal/services/friends"
 	"github.com/myselfBZ/satjade-backend/internal/store"
+	"github.com/myselfBZ/satjade-backend/internal/ws/events"
 )
 
 // POST /users/{user_id}/friends
@@ -96,9 +97,9 @@ func (a *api) acceptFriendshipRequestHandler(c echo.Context) error {
 	result.OnlineStatus = ok
 
 	if ok {
-		client.writeEvent(c.Request().Context(), serverSentEvent{
-			Type: newFriendType,
-			Body: &newFriend{
+		client.WriteEvent(events.ServerSentEventPayload{
+			Type: events.NewFriendType,
+			Body: &events.NewFriend{
 				FullName:     user.FullName,
 				FriendId:     user.ID,
 				FriendsSince: result.CreatedAt,

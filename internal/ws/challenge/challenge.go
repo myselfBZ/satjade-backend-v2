@@ -15,6 +15,14 @@ var(
 )
 
 
+func NewManager() Manager {
+	return &manager{
+		pendingChallengeRequests: make(map[string]ChallengeRequest),
+		challengeMu: sync.Mutex{},
+		expired: make(chan ChallengeRequest),
+	}
+}
+
 type ChallengeRequest struct {
 	Id 	   string `json:"id"`
 	FromId string `json:"from_id"`
@@ -27,17 +35,17 @@ type Manager interface {
 	Create(toId string, fromId string) (string, error)
 	Accept(id string, recepientId string) (ChallengeRequest, error)
 
-	ExpiredCh() <- chan *ChallengeRequest
+	ExpiredCh() <- chan ChallengeRequest
 }
 
 type manager struct {
 	pendingChallengeRequests map[string]ChallengeRequest
 	challengeMu sync.Mutex
 
-	expired   chan *ChallengeRequest
+	expired   chan ChallengeRequest
 }
 
-func (s *manager) ExpiredCh() <- chan *ChallengeRequest  {
+func (s *manager) ExpiredCh() <- chan ChallengeRequest  {
 	return  s.expired
 }
 
@@ -79,13 +87,18 @@ func (s *manager) Create(toId string, fromId string) (string, error) {
 
 	go func(id string) {
 		<- time.After(time.Second * 5)
-		s.challengeMu.Lock()
-		defer s.challengeMu.Unlock()
 
-		if r, ok := s.pendingChallengeRequests[id]; ok {
+		s.challengeMu.Lock()
+		r, ok := s.pendingChallengeRequests[id] 
+
+		if ok {
 			delete(s.pendingChallengeRequests, r.Id)
-			s.expired <- &r
+			s.challengeMu.Unlock()
+			s.expired <- r
+			return
 		}
+		s.challengeMu.Unlock()
+
 	}(id.String())
 
 	return id.String(), nil

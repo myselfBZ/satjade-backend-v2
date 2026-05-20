@@ -15,6 +15,8 @@ import (
 	questions_service "github.com/myselfBZ/satjade-backend/internal/services/questions"
 	users_service "github.com/myselfBZ/satjade-backend/internal/services/users"
 	"github.com/myselfBZ/satjade-backend/internal/store"
+	"github.com/myselfBZ/satjade-backend/internal/ws/challenge"
+	"github.com/myselfBZ/satjade-backend/internal/ws/clients"
 	"go.uber.org/zap"
 )
 
@@ -23,12 +25,12 @@ func main() {
 	cfg.Load()
 
 	a := &api{
-		wsClients: newWsClientsMap(),
-		challenges: newChallengeMap(),
+		wsClients: clients.NewManager(),
+		challenges: challenge.NewManager(),
 		duels: newDuelMap(),
 		config: cfg,
 		// TODO, make it configurable
-		wsConnCloseCh: make(chan string, 100),
+		wsClientExitCh: make(chan string),
 		eventCh: make(chan eventWrapper, 100),
 	}
 

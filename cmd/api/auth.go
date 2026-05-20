@@ -29,6 +29,9 @@ func (a *api) loginHandler(c echo.Context) error {
 		case domain.ErrRecordNotFound:
 			a.notFoundLog(c.Request().Method, c.Path(), err)
 			return echo.NewHTTPError(http.StatusNotFound, err.Error())
+		case domain.ErrInvalidCredentials:
+			a.unauthorizedLog(c.Request().Method, c.Path(), err)
+			return echo.NewHTTPError(http.StatusUnauthorized, err)
 		default:
 			a.internalErrLog(c.Request().Method, c.Path(), err)
 			return echo.NewHTTPError(http.StatusInternalServerError)

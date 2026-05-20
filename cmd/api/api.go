@@ -1,14 +1,12 @@
 package main
 
 import (
-	"fmt"
+	"net/http"
 	"os"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/myselfBZ/satjade-backend/internal/auth"
@@ -19,6 +17,9 @@ import (
 	practices_service "github.com/myselfBZ/satjade-backend/internal/services/practices"
 	questions_service "github.com/myselfBZ/satjade-backend/internal/services/questions"
 	users_service "github.com/myselfBZ/satjade-backend/internal/services/users"
+	"github.com/myselfBZ/satjade-backend/internal/ws/challenge"
+	"github.com/myselfBZ/satjade-backend/internal/ws/clients"
+	"github.com/myselfBZ/satjade-backend/internal/ws/events"
 	"go.uber.org/zap"
 )
 
@@ -105,38 +106,6 @@ func (c *config) Load() {
 	}
 }
 
-func newWsClientsMap() *wsClientsMap {
-	return &wsClientsMap{
-		clients: make(map[string]*wsClient),
-		mx:      sync.Mutex{},
-	}
-}
-
-type wsClientsMap struct {
-	clients map[string]*wsClient
-	mx      sync.Mutex
-}
-
-func (w *wsClientsMap) Get(id string) (*wsClient, bool) {
-	w.mx.Lock()
-	defer w.mx.Unlock()
-	c, ok := w.clients[id]
-	return c, ok
-}
-
-func (w *wsClientsMap) Set(id string, c *wsClient) {
-	w.mx.Lock()
-	defer w.mx.Unlock()
-
-	w.clients[id] = c
-}
-
-func (w *wsClientsMap) Del(id string) {
-	w.mx.Lock()
-	defer w.mx.Unlock()
-	delete(w.clients, id)
-}
-
 type api struct {
 	config      *config
 	logger      *zap.SugaredLogger
@@ -145,11 +114,13 @@ type api struct {
 	auth        auth.Authenticator
 	filestorage filestore.FileStorage
 
-	wsClients     *wsClientsMap
-	wsConnCloseCh chan string
-	challenges    *challengeMap
-	eventCh       chan eventWrapper
-	duels         *duelMap
+	wsReadCh       chan events.ClientSentEvent
+	wsClients      clients.Manager
+	wsClientExitCh chan string
+	challenges     challenge.Manager
+
+	eventCh chan eventWrapper
+	duels   *duelMap
 }
 
 func (a *api) mount() *echo.Echo {
@@ -230,51 +201,22 @@ func (a *api) run() error {
 	e := a.mount()
 	go a.handleEventLoop()
 	go a.onDissconnect()
-	return e.Start(a.config.addr)
-}
-
-func (a *api) getUUIDFromParam(name string, c echo.Context) (uuid.UUID, error) {
-	id := c.Param(name)
-
-	validID, err := uuid.Parse(id)
-
-	if err != nil {
-		return uuid.UUID{}, err
-	}
-
-	return validID, nil
-}
-
-func formatValidationError(err error) string {
-	errors := ""
-
-	valErrors, ok := err.(validator.ValidationErrors)
-	if !ok {
-		return "Internal validation error"
-	}
-
-	for _, f := range valErrors {
-		var msg string
-
-		switch f.Tag() {
-		case "required":
-			msg = fmt.Sprintf("%s is a required field. ", f.Field())
-		case "email":
-			msg = fmt.Sprintf("%s must be a valid email address. ", f.Field())
-		case "gte":
-			msg = fmt.Sprintf("%s must be at least %s. ", f.Field(), f.Param())
-		case "lte":
-			msg = fmt.Sprintf("%s cannot be greater than %s. ", f.Field(), f.Param())
-		case "min":
-			msg = fmt.Sprintf("%s must be at least %s characters. ", f.Field(), f.Param())
-		case "max":
-			msg = fmt.Sprintf("%s cannot exceed %s characters. ", f.Field(), f.Param())
-		default:
-			msg = fmt.Sprintf("%s is not valid input\n", f.Field())
+	// TODO do something with the expired challenges, but do i really have to?
+	go func() {
+		for req := range a.challenges.ExpiredCh() {
+			_ = req
+			a.logger.Logw(zap.DebugLevel, "Challenge expired")
 		}
+	}()
 
-		errors += msg
+	// TODO make it configurable
+	s := &http.Server{
+		Addr:              a.config.addr,
+		ReadTimeout:       5 * time.Second,
+		ReadHeaderTimeout: 2 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
-	return errors
+	return e.StartServer(s)
 }

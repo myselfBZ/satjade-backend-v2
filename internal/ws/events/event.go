@@ -5,13 +5,12 @@ import "encoding/json"
 type EventType string
 
 // general events
-const(
-	AuthEventType      EventType = "event_auth"
-	AckAuthEventType   EventType = "event_ack_auth"
-	ErrEventType       EventType = "event_error"
-	HeartBeatEventType EventType = "event_heartbeat"
-	OnlineStatusType   EventType = "event_went_online"
-	OfflineStatusType  EventType = "event_went_offline"
+const (
+	AuthEventType        EventType = "event_auth"
+	AckAuthEventType     EventType = "event_ack_auth"
+	ErrEventType         EventType = "event_error"
+	HeartBeatEventType   EventType = "event_heartbeat"
+	UserStatusChangeType EventType = "event_user_status_change"
 )
 
 type ClientSentEventPayload struct {
@@ -32,13 +31,10 @@ type ClientSentEvent interface {
 	isClientSentEvent()
 }
 
-
-var _ ClientSentEvent = (*ErrEvent)(nil)
+var _ ServerSentEvent = (*ErrEvent)(nil)
 
 type ErrEvent struct {
 	Message string `json:"message"`
 }
 
-func (e *ErrEvent) isClientSentEvent() {}
-
-
+func (e *ErrEvent) isServerSentEvent() {}

@@ -107,7 +107,7 @@ func (a *service) Login(ctx context.Context, params *LoginParams) (*AuthSuccessR
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(params.Password)); err != nil {
-		return nil, err
+		return nil, domain.ErrInvalidCredentials
 	}
 
 	claims := jwt.MapClaims{

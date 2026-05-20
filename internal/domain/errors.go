@@ -12,6 +12,7 @@ var (
 	ErrDuplicateEmail        = errors.New("this email is already taken")
 	ErrForeignConstraint     = errors.New("foreign key constraint violated")
 	ErrConflict              = errors.New("conflict request")
+	ErrInvalidCredentials    = errors.New("invalid email or password")
 
 	ErrInvalidChoice = errors.New("invalid choice id. Choice not found.")
 

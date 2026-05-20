@@ -5,9 +5,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/myselfBZ/satjade-backend/internal/domain"
+	"github.com/myselfBZ/satjade-backend/internal/ws/events"
 )
 
-func (a *api) broadcastOfflineStatus(ctx context.Context, userId uuid.UUID) error {
+func (a *api) broadcastStatusChange(ctx context.Context, userId uuid.UUID, status string) error {
 	friends, err := a.services.Friends.GetManyByUser(ctx, userId)
 	if err != nil {
 		return err
@@ -16,40 +17,13 @@ func (a *api) broadcastOfflineStatus(ctx context.Context, userId uuid.UUID) erro
 	for _, f := range friends {
 		client, ok := a.wsClients.Get(f.FriendId.String())
 		if ok {
-			if err := client.writeEvent(ctx, serverSentEvent{
-				Type: offlineStatusType,
-				Body: &offlineStatus{
+			client.WriteEvent(events.ServerSentEventPayload{
+				Type: events.UserStatusChangeType,
+				Body: &events.UserStatusChange{
 					UserId: userId.String(),
+					Status: status,
 				},
-			}); err != nil {
-				return err
-			}
-
-		}
-	}
-
-	return nil
-
-}
-
-
-func (a *api) broadcastOnlineStatus(ctx context.Context, userId uuid.UUID) error {
-	friends, err := a.services.Friends.GetManyByUser(ctx, userId)
-	if err != nil {
-		return err
-	}
-
-	for _, f := range friends {
-		client, ok := a.wsClients.Get(f.FriendId.String())
-		if ok {
-			if err := client.writeEvent(ctx, serverSentEvent{
-				Type: onlineStatusType,
-				Body: &onlineStatus{
-					UserId: userId.String(),
-				},
-			}); err != nil {
-				return err
-			}
+			})
 
 		}
 	}
@@ -65,9 +39,10 @@ func (a *api) notifyFriendRequest(ctx context.Context, request domain.Friendship
 	client, ok := a.wsClients.Get(request.ToId.String())
 
 	if ok {
-		return client.writeEvent(ctx, serverSentEvent{
-			Type: friendRequestType,
-			Body: &friendRequest{
+		// TODO please fucking figure out how to return an error
+		client.WriteEvent(events.ServerSentEventPayload{
+			Type: events.FriendRequestType,
+			Body: &events.FriendRequest{
 				FriendshipRequest: request,
 			},
 		})
