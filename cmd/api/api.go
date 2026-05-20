@@ -126,7 +126,8 @@ type api struct {
 func (a *api) mount() *echo.Echo {
 	e := echo.New()
 
-	e.Use(middleware.RequestLogger())
+	// considering it's importance....
+	// e.Use(middleware.RequestLogger())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{a.config.frontEndUrl, "http://localhost:5174"},
 		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS},
