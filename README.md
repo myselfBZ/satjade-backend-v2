@@ -1,0 +1,23 @@
+```bash
+#for the API binary
+SECRET_KEY=
+REFRESH_SECRET_KEY=
+SERVER_PORT=
+DB=
+FRONTEND_URL=
+TOKEN_EXPR_HOURS=
+IMAGE_STORE=
+LLM_APIKEY=
+AUTH_AUD=
+AUTH_ISS=
+LOG_FILE=
+
+#for the alert binary
+TG_BOT_API_KEY=
+CHAT_ID=
+
+#for the admin seed binary
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+
+```
