@@ -48,9 +48,16 @@ type config struct {
 	refreshSecretKey string
 	imgStorePath     string
 	llmApiKey        string
+	logFile			 string
 }
 
 func (c *config) Load() {
+	c.logFile = os.Getenv("LOG_FILE")
+
+	if c.logFile == "" {
+		panic("LOG_FILE was not set in the env")
+	}
+
 	c.addr = os.Getenv("SERVER_PORT")
 	if c.addr == "" {
 		panic("SERVER_PORT was not set in the env")

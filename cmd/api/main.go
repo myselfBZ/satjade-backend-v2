@@ -35,10 +35,21 @@ func main() {
 	}
 
 
+	loggerCfg := zap.NewProductionConfig()
+	loggerCfg.OutputPaths = []string{
+		"stdout",
+		a.config.logFile,
+	}
 
-	logger := zap.Must(zap.NewProduction(zap.AddCaller())).Sugar()
+
+	logger, err := loggerCfg.Build(zap.AddCaller())
+
+	if err != nil {
+		panic(err)
+	}
+
 	defer logger.Sync()
-	a.logger = logger
+	a.logger = logger.Sugar()
 	a.validator = validator.New()
 
 	db, err := postgres.New(postgres.Config{

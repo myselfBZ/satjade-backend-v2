@@ -51,14 +51,14 @@ func (a *api) handleWSConn(c echo.Context) error {
 		case ErrNoAuthToken:
 			return nil
 		default:
-			a.logger.Errorw("authentication failed", "err", err)
+			a.logger.Errorw("authentication failed", "err", err, "type", "ws")
 			if err := wsjson.Write(c.Request().Context(), conn, events.ServerSentEventPayload{
 				Type: events.ErrEventType,
 				Body: &events.ErrEvent{
 					Message: err.Error(),
 				},
 			}); err != nil {
-				a.logger.Warnw("could not write to ws connection", "err", err)
+				a.logger.Warnw("could not write to ws connection", "err", err, "type", "ws")
 			}
 
 			conn.Close(websocket.StatusPolicyViolation, "authentication failed")
@@ -91,7 +91,7 @@ func (a *api) readLoop(client *clients.Client) {
 				a.wsClientExitCh <- client.User.ID.String()
 				break
 			}
-			a.logger.Errorw("ReadEvent() returned an error", "e", err)
+			a.logger.Errorw("ReadEvent() returned an error", "e", err, "type", "ws")
 		}
 
 		a.eventCh <- eventWrapper{
@@ -198,7 +198,7 @@ func (a *api) handleQuitDuel(selfClient *clients.Client, event events.QuitDuel) 
 	duel, ok := a.duels.Get(event.DuelId)
 
 	if !ok {
-		a.logger.Errorw("quit request to a non-existing duel match", "id", event.DuelId)
+		a.logger.Errorw("quit request to a non-existing duel match", "id", event.DuelId, "type", "ws")
 		selfClient.WriteErrEvent("duel not found")
 		return
 	}
@@ -240,7 +240,7 @@ func (a *api) handleChallengeRequest(selfClient *clients.Client, event events.Ch
 
 	if !ok {
 		selfClient.WriteErrEvent("challenge sent to an offline user")
-		a.logger.Warnw("challenge sent to an offline user", "to", event.ToId, "from", selfClient.User.ID)
+		a.logger.Warnw("challenge sent to an offline user", "to", event.ToId, "from", selfClient.User.ID, "type", "ws")
 		return
 	}
 
@@ -248,7 +248,7 @@ func (a *api) handleChallengeRequest(selfClient *clients.Client, event events.Ch
 
 	if state.Type != clients.Idle {
 		selfClient.WriteErrEvent("peer is already in a match")
-		a.logger.Warnw("challenge sent to a user in a duel match", "to", event.ToId, "from", selfClient.User.ID)
+		a.logger.Warnw("challenge sent to a user in a duel match", "to", event.ToId, "from", selfClient.User.ID, "type", "ws")
 		return
 	}
 
@@ -256,7 +256,7 @@ func (a *api) handleChallengeRequest(selfClient *clients.Client, event events.Ch
 
 	if err != nil {
 		selfClient.WriteErrEvent("internal server error")
-		a.logger.Errorw("could not create a challenge", "err", err)
+		a.logger.Errorw("could not create a challenge", "err", err, "type", "ws")
 		return
 	}
 
@@ -278,11 +278,11 @@ func (a *api) handleChallengeAccepted(selfClient *clients.Client, event events.A
 	if err != nil {
 		switch err {
 		case challenge.ErrChallengeNotFound:
-			a.logger.Errorw("accept event to a non-existing challenge", "id", event.ChallengeId)
+			a.logger.Errorw("accept event to a non-existing challenge", "id", event.ChallengeId, "type", "ws")
 			selfClient.WriteErrEvent("challenge not found")
 			return
 		case challenge.ErrReciepientIdMismatch:
-			a.logger.Errorw("unauthorized access to challenge", "user_id", selfClient.User.ID.String())
+			a.logger.Errorw("unauthorized access to challenge", "user_id", selfClient.User.ID.String(), "type", "ws")
 			selfClient.WriteErrEvent("you cannot accept this challenge")
 			return
 		}
@@ -301,7 +301,7 @@ func (a *api) handleChallengeAccepted(selfClient *clients.Client, event events.A
 
 	if err != nil {
 		selfClient.WriteErrEvent("internal server error")
-		a.logger.Errorw("could not generate a uuid", "err", err)
+		a.logger.Errorw("could not generate a uuid", "err", err,  "type", "ws")
 		return
 	}
 
@@ -332,7 +332,7 @@ func (a *api) handleChallengeAccepted(selfClient *clients.Client, event events.A
 
 	if err != nil {
 		selfClient.WriteErrEvent("internal server error")
-		a.logger.Errorw("could'nt fetch question ids", "err", err)
+		a.logger.Errorw("could'nt fetch question ids", "err", err, "type", "ws")
 		return
 	}
 
@@ -361,7 +361,7 @@ func (a *api) handleCheckResponse(selfClient *clients.Client, event events.Check
 	duel, ok := a.duels.Get(event.DuelId)
 
 	if !ok {
-		a.logger.Errorw("check response event to a non-existing duel", "id", event.DuelId)
+		a.logger.Errorw("check response event to a non-existing duel", "id", event.DuelId, "type", "ws")
 		selfClient.WriteErrEvent("duel not found")
 		return
 	}
@@ -373,6 +373,7 @@ func (a *api) handleCheckResponse(selfClient *clients.Client, event events.Check
 			"attempted_by", selfClient.User.ID,
 			"owner_1", duel.user1,
 			"owner_2", duel.user2,
+			"type", "ws",
 		)
 		selfClient.WriteErrEvent("unauthorized duel access")
 		return
@@ -381,7 +382,7 @@ func (a *api) handleCheckResponse(selfClient *clients.Client, event events.Check
 	questionId, err := uuid.Parse(event.QuestionId)
 
 	if err != nil {
-		a.logger.Errorw("handleCheckResponse(): invalid question id", "id", event.QuestionId)
+		a.logger.Errorw("handleCheckResponse(): invalid question id", "id", event.QuestionId, "type", "ws")
 		selfClient.WriteErrEvent("invalid question id")
 		return
 	}
@@ -394,13 +395,13 @@ func (a *api) handleCheckResponse(selfClient *clients.Client, event events.Check
 	if err != nil {
 
 		if err == domain.ErrQuestionNotFound {
-			a.logger.Errorw("handleCheckResponse(): question not found", "id", event.QuestionId)
+			a.logger.Errorw("handleCheckResponse(): question not found", "id", event.QuestionId, "type", "ws")
 			selfClient.WriteErrEvent("question not found")
 			return
 		}
 
 		selfClient.WriteErrEvent("internal server error")
-		a.logger.Errorw("handleCheckResponse(): server encountered a problem", "err", err)
+		a.logger.Errorw("handleCheckResponse(): server encountered a problem", "err", err, "type", "ws")
 		return
 	}
 
@@ -436,13 +437,13 @@ func (a *api) handleDuelDone(selfClient *clients.Client, event events.DuelUserDo
 	userId := selfClient.User.ID.String()
 	duel, ok := a.duels.Get(event.DuelId)
 	if !ok {
-		a.logger.Errorw("done request to a non-existing duel", "id", event.DuelId)
+		a.logger.Errorw("done request to a non-existing duel", "id", event.DuelId, "type", "ws")
 		selfClient.WriteErrEvent("duel not found")
 		return
 	}
 
 	if ok := duel.isUserDone(userId); ok {
-		a.logger.Errorw("user sent redundant done event to duel", "id", userId)
+		a.logger.Errorw("user sent redundant done event to duel", "id", userId, "type", "ws")
 		selfClient.WriteErrEvent("redundant done event sent")
 		return
 	}

@@ -2,3 +2,4 @@
 .env.test
 bin/
 media/
+*.log
