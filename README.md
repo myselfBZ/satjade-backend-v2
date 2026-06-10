@@ -4,15 +4,15 @@
 
 
 Tech stack used:
-    - Golang with Echo for HTTP
-    - PostgreSQL
-    - sqlc (to reduce quering redundancy and increase type safety)
-    - Websockets for Duel competitive matches
+- Golang with Echo for HTTP
+- PostgreSQL
+- sqlc (to reduce quering redundancy and increase type safety)
+- Websockets for Duel competitive matches
 
 Requirements to spin it up locally:
-    - Go >=1.25.1
-    - PostgreSQL
-    - golang-migrate >=4.19
+- Go >=1.25.1
+- PostgreSQL
+- golang-migrate >=4.19
 
 Run the following commands in a sequential order to have the system up and running:
 ```bash
